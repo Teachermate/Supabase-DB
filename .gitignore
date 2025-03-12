@@ -1,0 +1,42 @@
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+!.env.example
+
+# Backup files
+*.backup
+*.bak
+*.dump
+backups/
+
+# Logs
+*.log
+
+# Supabase
+.supabase
+supabase/.temp/
+supabase/config.toml.backup
+supabase/.branches/
+volumes/
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+temp/
+tmp/
+
+# Node.js
+node_modules/ 

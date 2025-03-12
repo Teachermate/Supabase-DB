@@ -1,0 +1,75 @@
+version: '3.8'
+services:
+  postgres:
+    container_name: postgres
+    image: supabase/postgres:15.1.0.103
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d:ro
+      - ./backups:/backups
+    ports:
+      - "54322:5432"
+    networks:
+      - supabase_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  storage:
+    container_name: storage
+    image: supabase/storage-api:latest
+    restart: always
+    environment:
+      ANON_KEY: ${SUPABASE_ANON_KEY}
+      SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      POSTGRES_CONNECTION: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/postgres
+      FILE_SIZE_LIMIT: 52428800
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /storage
+    volumes:
+      - storage_data:/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "54323:5000"
+    networks:
+      - supabase_network
+
+  auth:
+    container_name: auth
+    image: supabase/gotrue:latest
+    restart: always
+    environment:
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-token-with-at-least-32-characters}
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_SITE_URL: http://localhost:3000
+      GOTRUE_OPERATOR_TOKEN: ${OPERATOR_TOKEN:-your-super-secret-operator-token}
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/postgres?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "54324:9999"
+    networks:
+      - supabase_network
+
+networks:
+  supabase_network:
+    driver: bridge
+
+volumes:
+  pgdata:
+    name: pgdata_${NODE_ENV:-development}
+    driver: local
+  storage_data:
+    name: storage_${NODE_ENV:-development}
+    driver: local 
